@@ -1,0 +1,21 @@
+duplicate_file_fixer.fix_duplicates:
+  path: '/admin/content/files-fix-duplicates'
+  defaults:
+    _controller: '\Drupal\duplicate_file_fixer\Controller\DuplicatesController::listing'
+    _title: 'Files'
+  requirements:
+    _permission: 'administer site configuration'
+
+duplicate_file_fixer.replace_file:
+  path: '/admin/content/replace-file/{duplicate_file}/{original_file}'
+  defaults:
+    _controller: '\Drupal\duplicate_file_fixer\Controller\DuplicatesController::replaceFile'
+    _title: 'Files'
+  requirements:
+    _permission: 'replace duplicate files'
+  options:
+    parameters:
+      duplicate_file:
+        type: entity:file
+      original_file:
+        type: entity:file

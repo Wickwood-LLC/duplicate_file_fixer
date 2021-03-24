@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function duplicate_file_fixer_schema() {
+  $schema['duplicate_files'] = array(
+    'description'     => 'Map of duplicate files to originals.',
+    'fields'          => [
+      'fid'           => [
+        'description' => 'File ID of the duplicate',
+        'type'        => 'int',
+      ],
+      'original_fid'  => [
+        'description' => 'File ID of the original',
+        'type'        => 'int',
+      ],
+      'exact' => [
+        'description' => 'Whether exact duplicate',
+        'type'        => 'int',
+      ],
+      'replaced_timestamp' => [
+        'description' => 'Datetime of replacement happened.',
+        'type'        => 'int',
+      ],
+    ],
+    'indexes'         => [
+      'original_fid'  => [
+        'original_fid',
+      ],
+    ],
+  );
+
+  return $schema;
+}
