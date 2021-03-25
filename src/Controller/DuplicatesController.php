@@ -163,10 +163,17 @@ class DuplicatesController extends ControllerBase {
       ];
     }
 
+    $num_duplicates = $this->database->select('duplicate_files', 'd')
+      ->isNull('d.replaced_timestamp')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+
     $build['duplicates'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
+      '#caption' => $this->t('There are @num duplicates', ['@num' => $num_duplicates]),
       '#attributes' => [],
       '#empty' => $this->t('No information available.'),
     ];
