@@ -8,6 +8,7 @@ use Drupal\Core\Database\Connection;
 use Drupal\file\Entity\File;
 use Drupal\views\Views;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\RevisionableStorageInterface;
 
 class DuplicateFinder {
 
@@ -78,7 +79,7 @@ class DuplicateFinder {
     else {
       $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
     }
-    
+
     $context['message'] = t('Processed %num files.', ['%num' => $context['sandbox']['progress']]);
     $context['sandbox']['current_id'] = $last_processed_fid;
   }
@@ -175,42 +176,100 @@ class DuplicateFinder {
 
     $args = [$duplicate_file->id()];
     $view = Views::getView('files');
-    if (is_object($view)) {
-      $view->setArguments($args);
-      $view->setDisplay('page_2');
-      $view->preExecute();
-      $view->execute();
-      foreach ($view->result as $result) {
-        $entity_type_storage = $this->entityTypeManager->getStorage($result->file_usage_type);
-        if ($entity_type_storage) {
-          $entity = $entity_type_storage->load($result->file_usage_id);
-          if ($entity) {
-            $fields_strage_definitions = $this->entityFieldManager->getFieldStorageDefinitions($result->file_usage_type);
-            foreach ($fields_strage_definitions as $field_name => $field_storage_definition) {
-              if (!in_array($field_storage_definition->getType(), ['file', 'image'])) {
-                unset($fields_strage_definitions[$field_name]);
+    $usage = \Drupal::service('file.usage')->listUsage($duplicate_file);
+    foreach ($usage as $module => $file_usage) {
+      foreach ($file_usage as $entity_type => $usage_data) {
+        foreach ($usage_data as $entity_id => $current_usage_count) {
+          $usage_count = 0;
+          $entity_type_storage = $this->entityTypeManager->getStorage($entity_type);
+          if ($entity_type_storage) {
+            $entity = $entity_type_storage->load($entity_id);
+            if ($entity) {
+              $fields_strage_definitions = $this->entityFieldManager->getFieldStorageDefinitions($entity_type);
+
+              $table_mapping = $this->entityTypeManager->getStorage($entity_type)->getTableMapping();
+
+              foreach ($fields_strage_definitions as $field_name => $field_storage_definition) {
+                if (!in_array($field_storage_definition->getType(), ['file', 'image'])) {
+                  unset($fields_strage_definitions[$field_name]);
+                }
               }
-            }
-            $changed = FALSE;
-            foreach ($fields_strage_definitions as $field_name => $field_storage_definition) {
-              if ($entity->hasField($field_name)) {
-                $values = $entity->get($field_name)->getValue();
-                $field_changed = FALSE;
-                foreach ($values as $index => $value) {
-                  if ($value['target_id'] == $duplicate_file->id()) {
-                    $values[$index]['target_id'] = $original_file->id();
-                    $changed = TRUE;
-                    $field_changed = TRUE;
+              $changed = FALSE;
+              $latest_revision_id = NULL;
+              $field_table_info = [];
+              $entity_data_table = $table_mapping->getDataTable();
+              $entity_revision_table = $table_mapping->getRevisionDataTable();
+              foreach ($fields_strage_definitions as $field_name => $field_storage_definition) {
+                if ($entity->hasField($field_name)) {
+                  $values = $entity->get($field_name)->getValue();
+                  $field_changed = FALSE;
+                  foreach ($values as $index => $value) {
+                    if ($value['target_id'] == $duplicate_file->id()) {
+                      $values[$index]['target_id'] = $original_file->id();
+                      $changed = TRUE;
+                      $field_changed = TRUE;
+                      $usage_count++;
+                    }
                   }
+                  if ($field_changed) {
+                    $entity->get($field_name)->setValue($values);
+                  }
+                  $table_name = $table_mapping->getFieldTableName($field_name);
+                  $main_property_name = $field_storage_definition->getMainPropertyName();
+
+                  if ($table_name == $entity_data_table) {
+                    $revision_table = $entity_revision_table;
+                    $main_property_column = $field_name . '__' . $main_property_name;
+                  }
+                  else {
+                    $revision_table = $table_mapping->getDedicatedRevisionTableName($field_storage_definition);
+                    $main_property_column = $field_name . '_' . $main_property_name;
+                  }
+                  $field_table_info[$field_name] = ['table' => $table_name, 'column' => $main_property_column, 'revision_table' => $revision_table];
                 }
-                if ($field_changed) {
-                  $entity->get($field_name)->setValue($values);
+              }
+              if ($changed) {
+                $entity->save();
+              }
+              if ($entity_type_storage instanceof RevisionableStorageInterface) {
+                $latest_revision_id = $entity_type_storage->getLatestRevisionId($entity->id());
+                $revision_key = $entity->getEntityType()->getKey('revision');
+                $id_key = $entity->getEntityType()->getKey('revision');
+                foreach ($field_table_info as $field_name => $table_info) {
+                  if ($table_info['revision_table'] == $entity_revision_table) {
+                    // $revision_column = $revision_key;
+                    $num_updated = $this->database->update($table_info['revision_table'])
+                      ->condition($id_key, $entity->id())
+                      ->condition($revision_key, $latest_revision_id, '!=')
+                      ->condition($table_info['column'], $duplicate_file->id())
+                      ->fields(array($table_info['column'] => $original_file->id()))
+                      ->execute();
+                  }
+                  else {
+                    // $revision_column = 'revision_id';
+                    $num_updated = $this->database->update($table_info['revision_table'])
+                      ->condition('entity_id', $entity->id())
+                      ->condition('revision_id', $latest_revision_id, '!=')
+                      ->condition($table_info['column'], $duplicate_file->id())
+                      ->fields(array($table_info['column'] => $original_file->id()))
+                      ->execute();
+                  }
+
+                  $usage_count += $num_updated;
+                  // \Drupal::service('file.usage')->add($file, 'editor', $entity->getEntityTypeId(), $entity->id());
                 }
               }
             }
-            if ($changed) {
-              $entity->save();
-            }
+            // TODO: Need to get the table name dynamically.
+            $query = $this->database->update('file_usage')
+              ->condition('module', $module)
+              ->condition('fid', $duplicate_file->id())
+              ->condition('type', $entity_type)
+              ->condition('id', $entity_id);
+            // Incorrect usage info makes it impossible to deduct calculated usage count.
+            // $query->expression('count', 'count - :count', [':count' => $usage_count]);
+            $query->fields(['count' => 0]);
+            $query->execute();
           }
         }
       }
