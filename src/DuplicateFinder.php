@@ -33,6 +33,11 @@ class DuplicateFinder {
   protected $database;
 
   /**
+   * Flag indicating if the Crop Image module is enabled.
+   */
+  protected $cropImageModuleEnabled;
+
+  /**
    * Constructs a new OrderSubscriber object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -46,6 +51,9 @@ class DuplicateFinder {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->database = $connection;
+
+    $moduleHandler = \Drupal::service('module_handler');
+    $this->cropImageModuleEnabled = $moduleHandler->moduleExists('crop_image');
   }
 
   public static function findAsBatchProcess(&$context) {
@@ -73,7 +81,7 @@ class DuplicateFinder {
 
     // $context['results'][] = $row->id . ' : ' . Html::escape($row->title);
     
-    $context['message'] = t('Processed %num items.', ['%num' => $context['sandbox']['progress']]);
+    $context['message'] = t('Processed %num files.', ['%num' => $context['sandbox']['progress']]);
     $context['sandbox']['current_id'] = $last_processed_fid;
   }
 
@@ -141,6 +149,10 @@ class DuplicateFinder {
     foreach ($result as $row) {
       $exact_duplicate = FALSE;
       $duplicate_file = File::load($row->fid);
+      if ($this->cropImageModuleEnabled && \Drupal\crop_image\Entity\CropDuplicate::isDuplicate($row->fid)) {
+        // CropDuplicates should be exempted.
+        continue;
+      }
       if ($file_hash && is_readable($duplicate_file->getFileUri())) {
         $duplicate_file_hash = hash_file($hash_algorithm, $duplicate_file->getFileUri());
         if ($file_hash = $duplicate_file_hash) {
