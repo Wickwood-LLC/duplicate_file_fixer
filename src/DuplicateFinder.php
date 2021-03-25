@@ -9,6 +9,7 @@ use Drupal\file\Entity\File;
 use Drupal\views\Views;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\RevisionableStorageInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 
 class DuplicateFinder {
 
@@ -39,6 +40,13 @@ class DuplicateFinder {
   protected $cropImageModuleEnabled;
 
   /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * Constructs a new OrderSubscriber object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -47,11 +55,14 @@ class DuplicateFinder {
    *   The entity field manager.
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, Connection $connection) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, Connection $connection, MessengerInterface $messenger) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->database = $connection;
+    $this->messenger = $messenger;
 
     $moduleHandler = \Drupal::service('module_handler');
     $this->cropImageModuleEnabled = $moduleHandler->moduleExists('crop_image');
@@ -173,9 +184,6 @@ class DuplicateFinder {
       $original_file = File::load($original_file);
     }
 
-
-    $args = [$duplicate_file->id()];
-    $view = Views::getView('files');
     $usage = \Drupal::service('file.usage')->listUsage($duplicate_file);
     foreach ($usage as $module => $file_usage) {
       foreach ($file_usage as $entity_type => $usage_data) {
@@ -270,6 +278,12 @@ class DuplicateFinder {
             // $query->expression('count', 'count - :count', [':count' => $usage_count]);
             $query->fields(['count' => 0]);
             $query->execute();
+          }
+          else {
+            $this->messenger->addStatus($this->t(
+              'File usage of file @fid by module @module for type @type with id @id could not be resolved.',
+              ['@fid' => $duplicate_file->id(), '@module' => $module, '@type' => $entity_type, '@id' => $entity_id]
+            ));
           }
         }
       }

@@ -1,4 +1,4 @@
 services:
   duplicate_file_fixer.duplicate_finder:
     class: \Drupal\duplicate_file_fixer\DuplicateFinder
-    arguments: ['@entity_type.manager', '@entity_field.manager', '@database']
+    arguments: ['@entity_type.manager', '@entity_field.manager', '@database', '@messenger']
