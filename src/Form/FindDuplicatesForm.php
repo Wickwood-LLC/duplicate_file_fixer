@@ -89,7 +89,7 @@ class FindDuplicatesForm extends FormBase {
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
       '#type' => 'submit',
-      '#value' => $this->t('Rerun to find duplicates'),
+      '#value' => $this->t('Find duplicates'),
       '#button_type' => 'primary',
     );
     return $form;

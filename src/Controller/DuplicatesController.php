@@ -135,7 +135,7 @@ class DuplicatesController extends ControllerBase {
       $operations = [];
       if ($duplicate_file && $original_file) {
         $operations[] = [
-          'title' => $this->t('Replace with original and delete'),
+          'title' => $this->t('Replace and delete'),
           'url' => Url::fromRoute('duplicate_file_fixer.replace_file', ['duplicate_file' => $duplicate_file->id(), 'original_file' => $original_file->id()], ['query' => \Drupal::destination()->getAsArray()]),
         ];
       }
