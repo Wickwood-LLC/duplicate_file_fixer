@@ -151,7 +151,7 @@ class DuplicateFinder {
       if ($file_hash && is_readable($duplicate_file->getFileUri())) {
         $duplicate_file_hash = hash_file($hash_algorithm, $duplicate_file->getFileUri());
         if ($file_hash = $duplicate_file_hash) {
-          $duplicates['exact'][$file_hash] = $row;
+          $duplicates['exact'][] = $row;
           $exact_duplicate = TRUE;
         }
       }
@@ -216,7 +216,8 @@ class DuplicateFinder {
       }
     }
 
-    $duplicate_file->delete();
+    // TODO:?
+    // $duplicate_file->delete();
 
     $this->database->update('duplicate_files')
       ->condition('fid', $duplicate_file->id())
