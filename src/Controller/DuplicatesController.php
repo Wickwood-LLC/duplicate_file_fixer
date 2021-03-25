@@ -115,7 +115,6 @@ class DuplicatesController extends ControllerBase {
           '#type' => 'link',
           '#title' => $this->t('Usage of @name (fid: @fid)', ['@name' => $duplicate_file->getFilename(), '@fid' => $duplicate_file->id()]),
           '#url' => Url::fromUri('internal:/admin/content/files/usage/' . $duplicate_file->id()),
-          // '#url' => Url::fromRoute('entity.file.canonical', ['file' => $row->original_fid]),
         ];
       }
       else {
@@ -128,7 +127,6 @@ class DuplicatesController extends ControllerBase {
           '#type' => 'link',
           '#title' => $this->t('@name (@fid)', ['@name' => $original_file->getFilename(), '@fid' => $original_file->id()]),
           '#url' => Url::fromUri($original_file->createFileUrl(FALSE)),
-          // '#url' => Url::fromRoute('entity.file.canonical', ['file' => $row->original_fid]),
         ];
       }
       else {

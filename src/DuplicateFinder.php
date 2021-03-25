@@ -78,8 +78,6 @@ class DuplicateFinder {
     else {
       $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
     }
-
-    // $context['results'][] = $row->id . ' : ' . Html::escape($row->title);
     
     $context['message'] = t('Processed %num files.', ['%num' => $context['sandbox']['progress']]);
     $context['sandbox']['current_id'] = $last_processed_fid;
@@ -87,8 +85,6 @@ class DuplicateFinder {
 
   public function find($start_fid, $count = 10) {
     $currnet_fid = $start_fid;
-
-    // $database = \Drupal::database();
 
     $i = 0;
     while ($i < $count) {
@@ -138,7 +134,6 @@ class DuplicateFinder {
       $file_hash = hash_file($hash_algorithm, $file->getFileUri());
     }
     $duplicates = ['possible' => [], 'exact' => []];
-    // $database = \Drupal::database();
 
     $query = $this->database->select('file_managed', 'f');
     $query->condition('f.fid', $file->id(), '>');
@@ -164,7 +159,6 @@ class DuplicateFinder {
         $duplicates['possible'][] = $row;
       }
     }
-    // var_dump($duplicates);
     return $duplicates;
   }
 
@@ -220,39 +214,16 @@ class DuplicateFinder {
           }
         }
       }
-      // $content = $view->buildRenderable('block', $args);
     }
 
     $duplicate_file->delete();
 
-    // $insert_query = $this->database->update('duplicate_files')->fields(['fid', 'original_fid', 'exact']);
     $this->database->update('duplicate_files')
       ->condition('fid', $duplicate_file->id())
       ->condition('original_fid', $original_file->id())
       ->isNull('replaced_timestamp')
       ->fields(array('replaced_timestamp' => time()))
       ->execute();
-    // $file_reference_fields = [];
-
-    // $field_map = $this->entityFieldManager->getFieldMap();
-
-    // foreach ($entity_reference_field_map as $entity_type_id => $field_list) {
-    //   $field_storage_definitions_for_entity_type = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions($entity_type_id);
-    //   foreach ($field_list as $field_name => $field_info) {
-    //     $sd = $field_storage_definitions_for_entity_type[$field_name];
-    //     if ($sd) {
-    //       $settings = $sd->getSettings();
-    //       if (isset($settings['target_type']) && $settings['target_type'] == 'file') {
-    //         $file_reference_fields[] = $field_info;
-    //       }
-    //     }
-    //     else {
-    //       var_dump( $field_info);
-    //     }
-    //   }
-    // }
-
-    // var_dump($file_fields);
   }
 
   public function clearFindings() {
