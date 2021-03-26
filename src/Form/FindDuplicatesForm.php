@@ -46,45 +46,11 @@ class FindDuplicatesForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // $form['candidate_name'] = array(
-    //   '#type' => 'textfield',
-    //   '#title' => t('Candidate Name:'),
-    //   '#required' => TRUE,
-    // );
-    // $form['candidate_mail'] = array(
-    //   '#type' => 'email',
-    //   '#title' => t('Email ID:'),
-    //   '#required' => TRUE,
-    // );
-    // $form['candidate_number'] = array (
-    //   '#type' => 'tel',
-    //   '#title' => t('Mobile no'),
-    // );
-    // $form['candidate_dob'] = array (
-    //   '#type' => 'date',
-    //   '#title' => t('DOB'),
-    //   '#required' => TRUE,
-    // );
-    // $form['candidate_gender'] = array (
-    //   '#type' => 'select',
-    //   '#title' => ('Gender'),
-    //   '#options' => array(
-    //     'Female' => t('Female'),
-    //     'male' => t('Male'),
-    //   ),
-    // );
-    // $form['candidate_confirmation'] = array (
-    //   '#type' => 'radios',
-    //   '#title' => ('Are you above 18 years old?'),
-    //   '#options' => array(
-    //     'Yes' =>t('Yes'),
-    //     'No' =>t('No')
-    //   ),
-    // );
-    // $form['candidate_copy'] = array(
-    //   '#type' => 'checkbox',
-    //   '#title' => t('Send me a copy of the application.'),
-    // );
+    $num_duplicates = $this->database->select('duplicate_files', 'd')
+      ->isNull('d.replaced_timestamp')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
 
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
@@ -92,6 +58,13 @@ class FindDuplicatesForm extends FormBase {
       '#value' => $this->t('Find duplicates'),
       '#button_type' => 'primary',
     );
+    if ($num_duplicates) {
+      $form['actions']['replace_all'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('Replace All Duplicates'),
+        '#name' => 'replace_all',
+      );
+    }
     return $form;
   }
 
@@ -108,32 +81,36 @@ class FindDuplicatesForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // // drupal_set_message($this->t('@can_name ,Your application is being submitted!', array('@can_name' => $form_state->getValue('candidate_name'))));
-    // foreach ($form_state->getValues() as $key => $value) {
-    //   drupal_set_message($key . ': ' . $value);
-    // }
-
-    // $nids = \Drupal::entityQuery('node')
-    //   ->condition('type', 'article')
-    //   ->sort('created', 'ASC')
-    //   ->execute();
-    
-    // $num_files = $database->select('file_managed', 'f')->countQuery()->execute()->fetchField();
-
-    \Drupal::service('file_de_duplicator.duplicate_finder')->clearFindings();
-
-    $batch = [
-      'title' => t('Finding Duplicates...'),
-      'operations' => [
-        [
-          '\Drupal\file_de_duplicator\DuplicateFinder::findAsBatchProcess',
-          []
+    if ($form_state->getTriggeringElement()['#name'] == 'replace_all') {
+      $batch = [
+        'title' => t('Replacing Duplicates...'),
+        'operations' => [
+          [
+            '\Drupal\file_de_duplicator\DuplicateFinder::replaceAsBatchProcess',
+            []
+          ],
         ],
-      ],
-      // 'finished' => '\Drupal\batch_example\DeleteNode::deleteNodeExampleFinishedCallback',
-    ];
+        // 'finished' => '\Drupal\batch_example\DeleteNode::deleteNodeExampleFinishedCallback',
+      ];
 
-    batch_set($batch);
+      batch_set($batch);
+    }
+    else {
+      \Drupal::service('file_de_duplicator.duplicate_finder')->clearFindings();
+
+      $batch = [
+        'title' => t('Finding Duplicates...'),
+        'operations' => [
+          [
+            '\Drupal\file_de_duplicator\DuplicateFinder::findAsBatchProcess',
+            []
+          ],
+        ],
+        // 'finished' => '\Drupal\batch_example\DeleteNode::deleteNodeExampleFinishedCallback',
+      ];
+
+      batch_set($batch);
+    }
   }
 
 }

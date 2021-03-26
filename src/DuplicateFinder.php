@@ -95,6 +95,34 @@ class DuplicateFinder {
     $context['sandbox']['current_id'] = $last_processed_fid;
   }
 
+  /**
+   * Batch process callback for replacing duplicates.
+   */
+  public static function replaceAsBatchProcess(&$context) {
+    $database = \Drupal::database();
+    if (empty($context['sandbox'])) {
+
+      $context['sandbox']['progress'] = 0;
+      $context['sandbox']['current_id'] = 0;
+      $context['sandbox']['max'] = $database->select('duplicate_files', 'd')
+        ->fields('d', ['fid'])
+        ->isNull('d.replaced_timestamp')
+        ->countQuery()->execute()->fetchField();
+    }
+
+    $duplicate_record = $database->select('duplicate_files', 'd')
+      ->fields('d', ['fid', 'original_fid'])
+      ->isNull('d.replaced_timestamp')
+      ->range(0, 1)
+      ->execute()->fetchObject();
+
+    \Drupal::service('file_de_duplicator.duplicate_finder')->replace($duplicate_record->fid, $duplicate_record->original_fid);
+
+    $context['sandbox']['progress'] += 1;
+    $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+    $context['message'] = t('Processed %num duplicates.', ['%num' => $context['sandbox']['progress']]);
+  }
+
   public function find($start_fid, $count = 10) {
     $currnet_fid = $start_fid;
 
