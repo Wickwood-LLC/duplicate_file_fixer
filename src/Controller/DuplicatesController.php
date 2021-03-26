@@ -87,6 +87,8 @@ class DuplicatesController extends ControllerBase {
       ->orderByHeader($header)
       ->execute();
 
+    $rows = [];
+
     foreach ($result as $row) {
       if (empty($row->exact)) {
         $type = $this->t('Possible');
@@ -171,7 +173,7 @@ class DuplicatesController extends ControllerBase {
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
-      '#caption' => $this->t('There are @num duplicates', ['@num' => $num_duplicates]),
+      '#caption' => $this->t('There are @num duplicates found.', ['@num' => $num_duplicates]),
       '#attributes' => [],
       '#empty' => $this->t('No information available.'),
     ];
