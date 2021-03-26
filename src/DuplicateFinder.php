@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\duplicate_file_fixer;
+namespace Drupal\file_de_duplicator;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
@@ -80,7 +80,7 @@ class DuplicateFinder {
 
     $limit = 50;
 
-    $last_processed_fid = \Drupal::service('duplicate_file_fixer.duplicate_finder')->find($context['sandbox']['current_id'], $limit);
+    $last_processed_fid = \Drupal::service('file_de_duplicator.duplicate_finder')->find($context['sandbox']['current_id'], $limit);
 
     $context['sandbox']['progress'] += $limit;
 

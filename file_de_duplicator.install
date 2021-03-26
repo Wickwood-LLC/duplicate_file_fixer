@@ -3,7 +3,7 @@
 /**
  * Implements hook_schema().
  */
-function duplicate_file_fixer_schema() {
+function file_de_duplicator_schema() {
   $schema['duplicate_files'] = array(
     'description'     => 'Map of duplicate files to originals.',
     'fields'          => [

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\duplicate_file_fixer\Form;
+namespace Drupal\file_de_duplicator\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -120,13 +120,13 @@ class FindDuplicatesForm extends FormBase {
     
     // $num_files = $database->select('file_managed', 'f')->countQuery()->execute()->fetchField();
 
-    \Drupal::service('duplicate_file_fixer.duplicate_finder')->clearFindings();
+    \Drupal::service('file_de_duplicator.duplicate_finder')->clearFindings();
 
     $batch = [
       'title' => t('Finding Duplicates...'),
       'operations' => [
         [
-          '\Drupal\duplicate_file_fixer\DuplicateFinder::findAsBatchProcess',
+          '\Drupal\file_de_duplicator\DuplicateFinder::findAsBatchProcess',
           []
         ],
       ],

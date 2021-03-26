@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\duplicate_file_fixer\Controller;
+namespace Drupal\file_de_duplicator\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
@@ -47,7 +47,7 @@ class DuplicatesController extends ControllerBase {
    */
   public function listing() {
 
-    $build['form'] = \Drupal::formBuilder()->getForm(\Drupal\duplicate_file_fixer\Form\FindDuplicatesForm::class);
+    $build['form'] = \Drupal::formBuilder()->getForm(\Drupal\file_de_duplicator\Form\FindDuplicatesForm::class);
 
     $header = [
       [
@@ -136,7 +136,7 @@ class DuplicatesController extends ControllerBase {
       if ($duplicate_file && $original_file) {
         $operations[] = [
           'title' => $this->t('Replace'),
-          'url' => Url::fromRoute('duplicate_file_fixer.replace_file', ['duplicate_file' => $duplicate_file->id(), 'original_file' => $original_file->id()], ['query' => \Drupal::destination()->getAsArray()]),
+          'url' => Url::fromRoute('file_de_duplicator.replace_file', ['duplicate_file' => $duplicate_file->id(), 'original_file' => $original_file->id()], ['query' => \Drupal::destination()->getAsArray()]),
         ];
       }
       $rows[] = [
@@ -183,7 +183,7 @@ class DuplicatesController extends ControllerBase {
   public function replaceFile($duplicate_file, $original_file) {
     $destination_service = \Drupal::service('redirect.destination');
 
-    \Drupal::service('duplicate_file_fixer.duplicate_finder')->replace($duplicate_file, $original_file);
+    \Drupal::service('file_de_duplicator.duplicate_finder')->replace($duplicate_file, $original_file);
     
     $response = new RedirectResponse('/admin/content/files-fix-duplicates');
     return $response;

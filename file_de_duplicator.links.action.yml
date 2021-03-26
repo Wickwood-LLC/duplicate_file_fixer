@@ -1,10 +1,10 @@
-duplicate_file_fixer.files:
+file_de_duplicator.files:
   route_name: ds.add_block_field
   title: 'Add a block field'
   appears_on:
     - ds.fields_list
-duplicate_file_fixer.fix_duplicates:
-  route_name: duplicate_file_fixer.fix_duplicates
+file_de_duplicator.fix_duplicates:
+  route_name: file_de_duplicator.fix_duplicates
   title: 'Duplicate Files'
   appears_on:
     - ds.fields_list
