@@ -163,8 +163,13 @@ class DuplicatesController extends ControllerBase {
       ];
     }
 
-    $num_duplicates = $this->database->select('duplicate_files', 'd')
+    $num_duplicates_requiring_replacement = $this->database->select('duplicate_files', 'd')
       ->isNull('d.replaced_timestamp')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+
+    $num_duplicates = $this->database->select('duplicate_files', 'd')
       ->countQuery()
       ->execute()
       ->fetchField();
@@ -173,7 +178,7 @@ class DuplicatesController extends ControllerBase {
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
-      '#caption' => $this->t('There are @num duplicates found.', ['@num' => $num_duplicates]),
+      '#caption' => $this->t('There are @num duplicates found and @replace pending for replacement.', ['@num' => $num_duplicates, '@replace' => $num_duplicates_requiring_replacement]),
       '#attributes' => [],
       '#empty' => $this->t('No information available.'),
     ];
