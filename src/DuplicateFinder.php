@@ -212,6 +212,7 @@ class DuplicateFinder {
       $original_file = File::load($original_file);
     }
 
+    $can_deleted = TRUE;
     $usage = \Drupal::service('file.usage')->listUsage($duplicate_file);
     foreach ($usage as $module => $file_usage) {
       foreach ($file_usage as $entity_type => $usage_data) {
@@ -308,6 +309,7 @@ class DuplicateFinder {
             $query->execute();
           }
           else {
+            $can_deleted = FALSE;
             $this->messenger->addStatus($this->t(
               'File usage of file @fid by module @module for type @type with id @id could not be resolved.',
               ['@fid' => $duplicate_file->id(), '@module' => $module, '@type' => $entity_type, '@id' => $entity_id]
@@ -317,8 +319,9 @@ class DuplicateFinder {
       }
     }
 
-    // TODO:?
-    $duplicate_file->delete();
+    if ($can_deleted) {
+      $duplicate_file->delete();
+    }
 
     $this->database->update('duplicate_files')
       ->condition('fid', $duplicate_file->id())
