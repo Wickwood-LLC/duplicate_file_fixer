@@ -318,7 +318,7 @@ class DuplicateFinder {
     }
 
     // TODO:?
-    // $duplicate_file->delete();
+    $duplicate_file->delete();
 
     $this->database->update('duplicate_files')
       ->condition('fid', $duplicate_file->id())
