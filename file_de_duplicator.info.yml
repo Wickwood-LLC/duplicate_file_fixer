@@ -1,4 +1,4 @@
-name: 'Duplicate File Fixer'
+name: 'File De-duplicator'
 type: module
 description: 'Helps to find duplicate files uploaded and eliminate them.'
 package: Field types
